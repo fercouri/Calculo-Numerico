@@ -1,0 +1,443 @@
+% --------------------------------------------------------------------------------------------------
+% Template para resposta das atividades de Cálculo Numérico - Turma X - 2019.3
+% --------------------------------------------------------------------------------------------------
+%
+% Definicoes para configurar o template. 
+% Nao alterar
+%
+% --------------------------------------------------------------------------------------------------
+
+\documentclass[12pt,letterpaper]{article}
+
+\usepackage{fullpage}
+\usepackage[top=2cm, bottom=4.5cm, left=2.5cm, right=2.5cm]{geometry}
+\usepackage{amsmath,amsthm,amsfonts,amssymb,amscd}
+\usepackage{lastpage}
+\usepackage{enumerate}
+\usepackage{fancyhdr}
+\usepackage{mathrsfs}
+\usepackage{xcolor}
+\usepackage{graphicx}
+\usepackage{listings}
+\usepackage{hyperref}
+\usepackage{float}
+
+% PORTUGUES
+\usepackage[brazilian]{babel}
+\usepackage[utf8]{inputenc}
+
+\hypersetup{%
+  colorlinks=true,
+  linkcolor=blue,
+  linkbordercolor={0 0 1}
+}
+ 
+\renewcommand\lstlistingname{Algoritmo}
+\renewcommand\lstlistlistingname{Algoritmo}
+\def\lstlistingautorefname{Alg.}
+
+\lstdefinestyle{Python}{
+    language        = Python,
+    frame           = lines, 
+    basicstyle      = \footnotesize,
+    keywordstyle    = \color{blue},
+    stringstyle     = \color{green},
+    commentstyle    = \color{red}\ttfamily
+}
+
+\lstdefinestyle{CPadrao}{
+  belowcaptionskip=1\baselineskip,
+  breaklines=true,
+  frame=lines,
+  xleftmargin=\parindent,
+  language=C,
+  showstringspaces=false,
+  basicstyle=\footnotesize\ttfamily,
+  keywordstyle=\bfseries\color{green!40!black},
+  commentstyle=\itshape\color{purple!40!black},
+  identifierstyle=\color{blue},
+  stringstyle=\color{orange},
+}
+
+\setlength{\parindent}{0.0in}
+\setlength{\parskip}{0.05in}
+
+% Edit these as appropriate
+\newcommand\course{UFJF}
+\newcommand\hwnumber{1}               % <-- Numero da Lista
+\newcommand\NetIDa{DCC008}          % <-- Nome da Disciplina
+\newcommand\NetIDb{Gabriella Carvalho e Maria Fernanda Couri Biazollo}     % <-- Nome do Aluno (a)
+
+\pagestyle{fancyplain}
+\headheight 35pt
+\lhead{\NetIDa}
+\chead{\textbf{\Large Trabalho Final}}
+\rhead{\course \\ \today}
+\lfoot{}
+\cfoot{}
+\rfoot{\small\thepage}
+\headsep 1.5em
+
+% ----------------------------------------------------------------------------------------------------
+\begin{document}
+% ----------------------------------------------------------------------------------------------------
+%
+% Aqui comeca o documento
+%
+% ----------------------------------------------------------------------------------------------------
+
+\textbf{Alunas:} \NetIDb
+
+\section{Introdução}
+Este relatório descreve o desenvolvimento de um código computacional para calcular os pontos de integração da quadratura de Gauss-Legendre em qualquer intervalo \([a, b]\). A quadratura de Gauss-Legendre é um método numérico para aproximar integrais definidas, utilizando pontos e pesos específicos que maximizam a precisão da integração.
+
+\section{Metodologia}
+O método consiste em resolver um sistema de equações não-lineares para encontrar os pontos \(t_i\) e os pesos \(w_i\) que satisfazem as condições da quadratura de Gauss. O processo envolve os seguintes passos:
+
+\subsection{Definição do Domínio de Integração}
+O intervalo de integração \([a, b]\) é definido pelo usuário. O código solicita os valores de \(a\) e \(b\) e verifica se são números válidos.
+
+\subsection{Definição do Número de Pontos de Integração}
+O número de pontos de integração \(N\) é definido pelo usuário. O código solicita o valor de \(N\) e verifica se é um número inteiro válido.
+
+\subsection{Inicialização dos Pesos e Pontos}
+Os pesos \(w_i\) e os pontos \(t_i\) são inicializados com aproximações iniciais. Para \(i \leq \frac{N}{2}\), os pesos são calculados como:
+\[
+w_i^0 = \frac{b - a}{2N} i
+\]
+Para \(i > \frac{N}{2}\), os pesos são espelhados:
+\[
+w_i^0 = w_{\frac{N}{2} - i}^0
+\]
+Os pontos \(t_i\) são calculados de forma semelhante, onde para \(i \leq \frac{N}{2}\), os pontos são calculados como:
+\[
+t_i^0 = a + \frac{i w_0[i]}{2}
+\]
+Para \(i > \frac{N}{2}\), os valores de \(t_0\) são espelhados da seguinte forma:
+\[
+t_i^0 = (a + b) - t^0_{\frac{N}{2}-i}
+\]
+No caso em que \(N\) é ímpar, o ponto central é calculado como:
+\[
+t^0_{\frac{N}{2}} = \frac{(a + b)}{2}
+\]
+
+\lstset{caption={Função para calcular os pesos iniciais \(w_0\)}}
+\lstset{label={lst:calculoPesosW0}}
+\begin{lstlisting}[style=Python]
+def calculoPesosW0(a, b, N):
+    w_0 = np.zeros(N)
+    for i in range(0, N // 2):
+        w_0[i] = ((b - a) / (2 * N)) * (i + 1)
+    for i in range(N // 2, N):
+        index = (N // 2) - ((i + 1) - (N // 2))
+        if index < 0:
+            index = index * (-1)
+        w_0[i] = w_0[index]
+    return w_0
+\end{lstlisting}
+
+Os pontos \(t_i\) são calculados de forma semelhante, onde para \(i \leq \frac{N}{2}\), os pontos são calculados como:
+\[
+t_i^0 = a + \frac{i w_0[i]}{2}
+\]
+Para \(i > \frac{N}{2}\), os valores de \(t_0\) são espelhados da seguinte forma:
+\[
+t_i^0 = (a + b) - t^0_{\frac{N}{2}-i}
+\]
+No caso em que \(N\) é ímpar, o ponto central é calculado como:
+\[
+t^0_{\frac{N}{2}} = \frac{(a + b)}{2}
+\]
+
+\lstset{caption={Função para calcular os pontos iniciais \(t_0\)}}
+\lstset{label={lst:calculoPesosT0}}
+\begin{lstlisting}[style=Python]
+def calculoPesosT0(a, b, N, w0):
+    t_0 = np.zeros(N)
+    for i in range(0, N // 2):
+        t_0[i] = a + (((i + 1) * w_0[i]) / 2)
+    for i in range(N // 2, N):
+        index = (N // 2) - ((i + 1) - (N // 2))
+        if index < 0:
+            index = index * (-1)
+        t_0[i] = (a + b) - t_0[index]
+    if N % 2 != 0:
+        t_0[N // 2] = (a + b) / 2
+    return t_0
+\end{lstlisting}
+
+\subsection{Cálculo do Sistema de Equações}
+O sistema de equações \(F(w, t)\) é calculado utilizando a regra de Simpson 1/3 para aproximar as integrais:
+\[
+F_j(w, t) = \sum_{i=1}^{N} w_i \cdot (t_i)^{j-1} - \int_{a}^{b} x^{j-1} \, dx \quad \text{para} \quad j = 1, 2, \dots, 2N
+\]
+
+\lstset{caption={Função para calcular utilizando a regra de Simpson 1/3}}
+\lstset{label={lst:regraSimpson}}
+\begin{lstlisting}[style=Python]
+def integral_simpson(a, b, m, j):
+    # Função a ser integrada: f(x) = x^(j-1)
+    def f(x):
+        return x**(j-1)
+    
+    h = (b - a) / m
+    
+    # Como c0 = cm = 1 
+    integral = f(a) + f(b)
+    
+    for i in range(1, m, 2):  
+        integral += 4 * f(a + i * h)
+    
+    for i in range(2, m, 2):  
+        integral += 2 * f(a + i * h)
+    
+    integral *= h / 3
+    
+    return integral
+\end{lstlisting}
+
+\lstset{caption={Função para calcular o sistema de equações \(F(w, t)\)}}
+\lstset{label={lst:calculoF}}
+\begin{lstlisting}[style=Python]
+def calculoF(w_0, t_0, a, b, N):
+    F_val = np.zeros(2 * N)
+    for j in range(1, 2 * N + 1):
+        m = 1000
+        integral = integral_simpson(a, b, m, j)
+        somatorio = sum(w_0[i] * (t_0[i] ** (j - 1)) for i in range(N))
+        F_val[j - 1] = somatorio - integral
+    return F_val
+\end{lstlisting}
+
+\subsection{Montagem da Matriz Jacobiana}
+A matriz Jacobiana \(J(w, t)\) é montada utilizando diferenças finitas para aproximar as derivadas parciais:
+\[
+J(w, t) =
+\begin{bmatrix}
+\frac{\partial f_1}{\partial w_1} & \cdots & \frac{\partial f_1}{\partial w_N} & \frac{\partial f_1}{\partial t_1} & \cdots & \frac{\partial f_1}{\partial t_N} \\
+\frac{\partial f_2}{\partial w_1} & \cdots & \frac{\partial f_2}{\partial w_N} & \frac{\partial f_2}{\partial t_1} & \cdots & \frac{\partial f_2}{\partial t_N} \\
+\vdots & \vdots & \vdots & \vdots & \vdots & \vdots \\
+\frac{\partial f_{2N}}{\partial w_1} & \cdots & \frac{\partial f_{2N}}{\partial w_N} & \frac{\partial f_{2N}}{\partial t_1} & \cdots & \frac{\partial f_{2N}}{\partial t_N}
+\end{bmatrix}
+\]
+
+onde, o cálculo é feito através da aproximação de cada uma das derivadas parciais, onde, definido uma perturbação, faz-se:
+
+$$
+\frac{\partial f_i}{\partial w_j} \approx \frac{f_i(w_1 + \epsilon, w_2, \dots, w_N, t_1, \dots, t_N) - f_i(w_1, w_2, \dots, w_N, t_1, \dots, t_N)}{\epsilon}
+$$
+
+e, semelhantemente, ocorre para a derivada $f_i$ em relação a $t_j$.
+
+\lstset{caption={Função para calcular a matriz Jacobiana}}
+\lstset{label={lst:calculoJ}}
+\begin{lstlisting}[style=Python]
+def calculoJ(w, t, a, b, N, F0, m, eps):
+    J = np.zeros((2 * N, 2 * N))
+    for j in range(N):
+        w_pert = np.copy(w)
+        w_pert[j] += eps
+        F_pert = calculoF(w_pert, t, a, b, N)
+        J[:, j] = (F_pert - F0) / eps
+    for j in range(N):
+        t_pert = np.copy(t)
+        t_pert[j] += eps
+        F_pert = calculoF(w, t_pert, a, b, N)
+        J[:, N + j] = (F_pert - F0) / eps
+    return J
+\end{lstlisting}
+
+\subsection{Resolução pelo Método de Newton}
+O método de Newton é utilizado para resolver o sistema de equações não-lineares. A cada iteração, as aproximações dos pesos e pontos são atualizadas de acordo com a solução do sistema linear:
+\[
+J(w, t) \cdot s = -F(w, t)
+\]
+onde \(s\) é o vetor de correção.
+
+\lstset{caption={Função para resolver o sistema pelo método de Newton}}
+\lstset{label={lst:newtonSolver}}
+\begin{lstlisting}[style=Python]
+def newton(w0, t0, a, b, N, tol=1e-8, max_iter=100):
+    w = np.copy(w0)
+    t = np.copy(t0)
+    
+    for k in range(max_iter):
+        F_val = calculoF(w, t, a, b, N)
+        J_val = calculoJ(w, t, a, b, N, F_val, m=1000, eps=1e-8)
+        
+        try:
+            s = np.linalg.solve(J_val, -F_val)
+        except ValueError as e:
+            print("Matriz Jacobiana singular")
+            s = np.linalg.lstsq(J_val, -F_val, rcond=None)[0]
+        
+        # Critério de parada: norma infinito do vetor s
+        if np.linalg.norm(s, ord=np.inf) < tol:
+            w = w + s[:N]
+            t = t + s[N:]
+            print(f"Convergência atingida após {k+1} iterações.")
+            return w, t
+        
+        # Atualiza as aproximações
+        w = w + s[:N]
+        t = t + s[N:]
+    
+    print("Número máximo de iterações alcançado.")
+    return w, t
+\end{lstlisting}
+
+Optamos por resolver o sistema linear J(w,t)s= -F(w,t) utilizando a função \texttt{np.linalg.solve}, que é adequada para sistemas lineares bem-condicionados. No entanto, em casos onde a matriz Jacobiana é singular - não invertível, a função \texttt{np.linalg.solve} lança uma exceção. 
+
+Para contornar esse problema, utilizamos a função \texttt{np.linalg.lstsq}, que resolve o sistema linear por mínimos quadrados, fornecendo uma solução aproximada, sendo útil em problemas onde a matriz Jacobiana pode não ser invertível. Essa abordagem garante que o método de Newton continue a convergir, mesmo em situações onde a matriz Jacobiana não é ideal.
+
+Além disso, implementamos um critério de parada baseado na norma infinito do vetor de correção s. Se a norma infinito de s for menor que uma tolerância pré-definida (tol=10-8), consideramos que a convergência foi atingida e retornamos os valores atualizados dos pesos w e pontos t. Caso o número máximo de iterações seja alcançado sem que a convergência seja atingida, o algoritmo é interrompido e uma mensagem é exibida.
+
+\section{Implementação}
+O código foi implementado em Python, utilizando a biblioteca NumPy para cálculos numéricos. A função \texttt{newton} é responsável por iterar o método de Newton até que a convergência seja atingida ou o número máximo de iterações seja alcançado.
+
+\section{Resultados}
+
+As tabelas a seguir apresentam os resultados obtidos para os pesos e pontos de integração, bem como a comparação entre as soluções aproximadas e os valores exatos para as funções testadas.
+
+\subsection{Pesos e Pontos de integração}
+
+Na Tabela \ref{tab:tab1} são mostrados os valores dos pesos de integração para o intervalo \([-1, 1]\).
+
+    \begin{table}[ht!]
+        \centering
+        \caption{Valores dos pesos de integração para o intervalo $[-1, 1]$.}
+        \small
+        \begin{tabular}{|c|c|}
+        \hline
+          $N$  & $\mathbf{w}$ \\ \hline
+           2 & [1. 1.] \\ \hline
+           3 & [-4.03633422e+05, 3.31911624e-02, -5.66638713e-12] \\ \hline
+           4 & [0.34785485, 0.65214515, 0.65214515, 0.34785485] \\ \hline 
+           5 & [0.23692688, 0.47862867, 0.56888889, 0.23692688, 0.47862867]  \\ \hline
+           6 & [1.21600034e-14, 1.91351349e-07, 1.59823438e-02, 3.28783918e-01, -4.81704209e+01, 0.00000000e+00]  \\ \hline
+        \end{tabular}
+        \label{tab:tab1}
+    \end{table}
+
+Na Tabela \ref{tab:tab2} são mostrados os valores dos pontos de integração para o intervalo \([-1, 1]\). 
+
+    \begin{table}[ht!]
+        \centering
+        \caption{Valores dos pontos de integração para o intervalo $[-1, 1]$.}
+        \footnotesize
+        \begin{tabular}{|c|c|c|}
+        \hline
+          $N$ & $\mathbf{t}$ \\ \hline
+           2 & [-0.57735027, 0.57735027] \\ \hline
+           3 & [1.36591370e+02, 2.51294111e+00, -3.20596986e+05] \\ \hline
+           4 & [-0.86113631, 0.33998104, -0.33998104, 0.86113631] \\ \hline 
+           5 & [-9.06179846e-01, -5.38469310e-01, 2.49876856e-15  9.06179846e-01, 5.38469310e-01] \\ \hline
+           6 & [-9.07374963e+01, -1.73349898e+01, 2.90653550e+00, -2.63954166e+00, 9.00071756e-01, 2.77395335e+05] \\ \hline
+        \end{tabular}
+        \label{tab:tab2}
+    \end{table}
+
+\subsection{Execução do algoritmo}
+
+    \begin{table}[ht!]
+        \centering
+        \caption{Função $x^2$, Intervalo [-1, 1]}
+        \begin{tabular}{|c|c|c|c|}
+        \hline
+          $N$ & Solução Exata & Solução Aproximada & Erro \\ \hline
+          2 & 0.6666666666666666 & 0.6666666666666663 & 3.3306690738754696e-16 \\ \hline
+          3 & 0.6666666666666666 & -7530670468.747863 & 7530670469.41453 \\ \hline
+          4 & 0.6666666666666666 & 0.6666666666666663 & 3.3306690738754696e-16 \\ \hline
+          5 & 0.6666666666666666 & 0.6666666666666663 & 3.3306690738754696e-16 \\ \hline
+          6 & 0.6666666666666666 & 0.6666666666666663 & 3.3306690738754696e-16 \\ \hline
+        \end{tabular}
+        \label{tab:tab3}
+    \end{table}
+
+Na Tabela \ref{tab:tab3} é apresentada a integração da função \(x^2\) no intervalo \([-1, 1]\). Nota-se que para \(N=2\), 4, 5 e 6 os resultados aproximados se alinham com a solução exata, enquanto para \(N=3\) o erro é expressivamente elevado, sugerindo instabilidade numérica ou problema na implementação.
+
+    \begin{table}[ht]
+        \centering
+        \caption{Função $2*x$, Intervalo [0, 1]}
+        \begin{tabular}{|c|c|c|c|}
+        \hline
+          $N$ & Solução Exata & Solução Aproximada & Erro \\ \hline
+          2 & 1.0 & 0.7500000000000001 & 0.2499999999999999 \\ \hline
+          3 & 1.0 & 1.1774334133250643e+35 & 1.1774334133250643e+35 \\ \hline
+          4 & 1.0 & 0.75 & 0.25 \\ \hline
+          5 & 1.0 & 0.7500000000000001 & 0.2499999999999999 \\ \hline
+          6 & 1.0 & 0.7500000000000001 & 0.2499999999999999 \\ \hline
+        \end{tabular}
+        \label{tab:tab4}
+    \end{table} 
+
+A Tabela \ref{tab:tab4} mostra os resultados para a integração da função \(2x\) no intervalo \([0, 1]\). Aqui, observa-se que, exceto para \(N=3\) — onde o erro é extremamente alto —, os demais casos apresentam um erro constante de 0.25.
+
+    \begin{table}[ht]
+        \centering
+        \caption{Função $sen(x)$, Intervalo [0, 3.141592653589793]}
+        \begin{tabular}{|c|c|c|c|}
+        \hline
+          $N$ & Solução Exata & Solução Aproximada & Erro \\ \hline
+          2 & 2.0 & -0.561772552617011 & 2.56177255261701 \\ \hline
+          3 & 2.0 & -3.85511390950965 & 5.85511390950965 \\ \hline
+          4 & 2.0 & -0.974712520951616 & 2.97471252095162 \\ \hline
+          5 & 2.0 & -0.975379450942109 & 2.97537945094211 \\ \hline
+          6 & 2.0 & -0.975367836395440 & 2.97536783639544 \\ \hline
+        \end{tabular}
+        \label{tab:tab5}
+    \end{table}
+
+Por fim, a Tabela \ref{tab:tab5} apresenta os resultados para a integração da função \(\sin(x)\) no intervalo \([0, \pi]\). Os erros observados são expressivos em todos os casos, indicando que a abordagem utilizada necessita de ajustes para este tipo de função.
+
+\section{Discussões}
+Na Tabela \ref{tab:tab1}, apresentamos os valores dos pesos \( w \) e pontos \( t \) de integração para o intervalo \([-1, 1]\) com diferentes números de pontos \( N \). Observamos que:
+
+\begin{itemize}
+    \item Para \( N = 2 \), os pesos são \([1.0, 1.0]\) e os pontos são, aproximadamente, \([-0.58, 0.58]\). Esses valores são consistentes com a quadratura de Gauss-Legendre clássica para \( N = 2 \).
+    \item Para \( N = 3 \), os pesos e pontos apresentam valores extremamente grandes ou pequenos, o que sugere instabilidade numérica no cálculo. 
+    \item Para \( N = 4 \), os pesos e pontos retornam a valores consistentes, como \([0.35, 0.65, 0.65, 0.35]\) para os pesos e, aproximadamente, \([-0.86, -0.34, 0.34, 0.86]\) para os pontos. Esses valores são conhecidos na literatura para a quadratura de Gauss-Legendre com \( N = 4 \).
+    \item Para \( N = 5 \) e \( N = 6 \), os resultados apresentam novamente instabilidade, com valores extremamente grandes ou próximos de zero, indicando problemas na convergência do método.
+\end{itemize}
+
+Esses resultados sugerem que o método de Newton pode não ser estável para \( N > 4 \) com as aproximações iniciais utilizadas. Uma possível solução seria melhorar as aproximações iniciais ou utilizar métodos mais robustos para resolver o sistema não-linear.
+
+Na Tabela \ref{tab:tab3}, comparamos a solução exata da integral de \( f(x) = x^2 \) no intervalo \([-1, 1]\) com a solução aproximada obtida pela quadratura de Gauss-Legendre. Observamos que:
+\begin{itemize}
+    \item Para \( N = 2 \), a solução aproximada é \( 0.6666666666666663 \), com um erro de \( 3.33 \times 10^{-16} \). Isso indica uma excelente precisão, como esperado para \( N = 2 \).
+    \item Para \( N = 3 \), a solução aproximada é \(-7530670468.747863\), o que é claramente incorreto. Isso confirma a instabilidade observada na Tabela \ref{tab:tab1} para \( N = 3 \).
+    \item Para \( N = 4 \), a solução aproximada retorna a valores precisos, com um erro de \( 3.33 \times 10^{-16} \), indicando que o método funciona bem para \( N = 4 \).
+    \item Para \( N = 5 \) e \( N = 6 \), a solução aproximada é novamente precisa, com erros da ordem de \( 10^{-16} \).
+\end{itemize}
+
+Esses resultados mostram que, quando o método converge, a quadratura de Gauss-Legendre fornece resultados extremamente precisos. No entanto, nota-se uma grande instabilidade para \( N = 3 \).
+
+Na Tabela \ref{tab:tab4}, analisamos a integral da função \( f(x) = 2x \) no intervalo \([0, 1]\). Observamos que:
+
+\begin{itemize}
+    \item Para \( N = 2 \), \( N = 5 \) e \( N = 6 \), a solução aproximada é \( 0.7500000000000001 \), com um erro de \( 0.2499999999999999 \). Isso indica uma precisão moderada.
+    \item Para \( N = 3 \), a solução aproximada é \( 1.1774334133250643 \times 10^{35} \), o que é claramente incorreto e reflete a instabilidade do método.
+    \item Para \( N = 4 \), a solução aproximada é \( 0.75 \), com um erro de \( 0.25 \), indicando que o método não melhorou a precisão.
+\end{itemize}
+
+Esses resultados sugerem que a quadratura de Gauss-Legendre não é eficaz para funções lineares como \( f(x) = 2x \) no intervalo \([0, 1]\). Isso pode ser devido à natureza da função ou à inadequação do método para esse tipo de problema.
+
+
+Na Tabela \ref{tab:tab5}, analisamos a integral da função \( f(x) = \sin(x) \) no intervalo \([0, \pi]\). Observamos que:
+
+\begin{itemize}
+    \item Para \( N = 2 \), a solução aproximada é \(-0.561772552617011\), com um erro de \( 2.56177255261701 \). Isso indica uma precisão muito baixa.
+    \item Para \( N = 3 \), a solução aproximada é \(-3.85511390950965\), com um erro de \( 5.85511390950965 \), o que é ainda pior.
+    \item Para \( N = 4 \), a solução aproximada é \(-0.974712520951616\), com um erro de \( 2.97471252095162 \).
+    \item Para \( N = 5 \) e \( N = 6 \), a solução aproximada permanece próxima de \(-0.975\), com erros em torno de \( 2.975 \).
+\end{itemize}
+
+Esses resultados mostram que a quadratura de Gauss-Legendre não é eficaz para a função \( f(x) = \sin(x) \) no intervalo \([0, \pi]\). Isso pode ser devido à natureza oscilatória da função ou à inadequação do método para esse tipo de problema.
+
+\section{Conclusões}
+Os resultados obtidos evidenciam que a quadratura de Gauss-Legendre pode atingir elevada precisão quando o método converge, como observado na integração de \(x^2\) para \(N=2\), \(N=4\), \(N=5\) e \(N=6\). Contudo, instabilidades numéricas significativas foram notadas para \(N=3\) e em integrais envolvendo funções lineares e oscilatórias, sugerindo a necessidade de aprimorar as aproximações iniciais ou adotar métodos alternativos para garantir a estabilidade e a precisão dos resultados.
+
+
+
+\end{document}
